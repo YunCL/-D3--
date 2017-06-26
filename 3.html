@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/> 
+</title>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<body>
+	<h2 id='year'>Age distribution of the world,2010</h2>
+</body>
+<style type="text/css">
+   .axis line,.axis path{
+     fill:none;
+     stroke:#000;
+   }
+   .axis path{
+     display:none;
+   }
+   .axis text{
+    font-size:11px;
+    color: #ccc;
+   }
+   .buttons-container{
+      width: 500px;
+      height: 85px;
+      margin-bottom: 15px;
+   }
+   .button{
+    float: left;
+    width: 30px;
+    height: 20px;
+    margin-left: 10px;
+    margin-top: 4px;
+    font-weight: lighter;
+    border-radius: 4px;
+    border: 1px solid #333;
+    color: #333;
+    font-family: Microsoft Yahei;
+    padding: 10px 20px;
+    line-height: 20px;
+    -webkit-transition: color, background-color .2s;
+    transition: color, background-color .2s;
+    -ms-transition: color, background-color .2s;
+    -o-transition: color, background-color .2s;
+    transition: color, background-color .2s;
+   }
+   .button:hover{
+     background: black;
+     color: white;
+   }
+   .selected{
+    font-weight: bold;
+   }
+   svg{
+    display: inline-block;
+   }
+</style>
+<script>
+    var buttonYear = d3.range(1980,2020,5);
+    var year = 1980;
+    var years = d3.select('body').append('div')
+       .attr('class','buttons-container')
+       .selectAll('div')
+       .data(buttonYear)
+       .enter()
+       .append('div')
+       .text(function(d){return d;})
+       .attr('class',function(d){
+         if(d==year)
+            return 'button selected';
+         else
+            return 'button';
+       })
+       .style('cursor','pointer')
+    
+    var play = d3.select('body').append('div')
+                     .append('p')
+                     .text('AGE GROUP PORTION OF THE POPULATION')
+                     .style('font-size','13px')
+                     .style('margin-left','5px')
+                     .style('cursor','pointer')
+                     .style('margin-top','27px');
+
+
+    var svg =  d3.select('body').append('svg')
+                                .attr('width',700)
+                                .attr('height',400);
+    var width = svg.attr('width');
+    var height = svg.attr('height');
+    var barHeight = 20;
+    var barGap = 5;
+    var barspacing = barHeight+barGap;
+    
+    var barGroup = svg.append('g').attr('transform','translate(100,30)')
+    var x = d3.scale.linear()
+                    .range([0,width]);
+    
+    var textGroup = svg.append('g').attr('transform','translate(30,30)');
+  
+    d3.csv('popData.csv',function(error,data){
+        var popData = data.filter(function(element){ return element.year==year});
+
+        x.domain([0,d3.max(popData,function(d){return d.value;})]);
+
+        var bars = barGroup.selectAll('rect').data(popData)
+        var bars_enter = bars.enter()
+                             .append('rect')
+                             .attr('x',0)
+                             .attr('height',barHeight)
+                             .attr('y',function(d,i){return i*barspacing;})
+                             .attr('width',function(d){return x(d.value)})
+                             .attr('fill','#CD6090')
+                             .attr('fill-opacity','0.7');
+                             
+        var bars_exit = bars.exit();
+       
+        years.on('click',function(d){
+             d3.select('.selected').classed('selected',false);
+             d3.select(this).classed('selected',true);
+             year = d ;
+             d3.select('#year').text('Age distribution of the world,'+year);
+             popData = data.filter(function(element){ return element.year==year});
+             bars.data(popData)
+                 .transition()
+                 .delay(100)
+                 .duration(500)
+                 .ease('linear')
+                 .attr('width',function(d){return x(d.value)});
+             clearInterval(playInter);
+        });
+         var playInter;
+        play.on('click',function(){
+                          var i = 0 ;
+                          playInter = setInterval(function(){
+                                        update(buttonYear[i]);
+                                        i++;
+                                        if(i>buttonYear.length-1){
+                                          clearInterval(playInter);
+                                        }
+                                      },700);                         
+                     })
+
+        function update(year) {
+             d3.select('.selected').classed('selected',false);
+             years.filter(function(d){return d==year;})
+                       .classed('selected',true);
+             popData = data.filter(function(element){ return element.year==year});
+             bars.data(popData)
+                 .transition()
+                 .delay(100)
+                 .duration(500)
+                 .ease('linear')
+                 .attr('width',function(d){return x(d.value)});
+        }
+
+        textGroup.selectAll('text').data(popData)
+                 .enter()
+                 .append('text')
+                 .attr('x',-10)
+                 .attr('y',function(d,i){return i*barspacing+barHeight*(2/3);})
+                 .text(function(d){return d.age;});
+                 //.attr('text-anchor','middle')
+
+        var xAxis = d3.svg.axis()
+                          .scale(x)
+                          .orient('top')
+                          .ticks(5,'%');
+        var baseGroup = svg.append('g').attr('transform','translate(100,28)')
+                                       .call(xAxis)
+                                       .attr('class','axis');
+    })
+    
+                          
+
+</script>
+</html>
